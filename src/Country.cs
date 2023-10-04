@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Formatting;
 using System.Net.Security;
+using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace deathwing696
 {
@@ -56,8 +54,26 @@ namespace deathwing696
                 List<CountryAPI> countrys = Get_all_countries_api();
 
                 foreach (var country_api in countrys)
-	            {
-                    var country = new Country(country_api.Country.Name, country_api.Alpha2Code, country_api.Alpha3Code, String.Join(", ", country_api.Capital), country_api.Region, country_api.Country.NativeName.NativeNameName.NativeName);
+                {
+                    string name, alpha2Code, alpha3Code, capital, region, native_name;
+
+                    name = country_api.Country.Name != null ? country_api.Country.Name : "";
+                    alpha2Code = country_api.Alpha2Code != null ? country_api.Alpha2Code : "";
+                    alpha3Code = country_api.Alpha3Code != null ? country_api.Alpha3Code : "";
+                    capital = country_api.Capital != null ? String.Join(", ", country_api.Capital) : "";
+                    region = country_api.Region != null ? country_api.Region : "";
+
+                    if (country_api.Country.NativeName != null)
+                    {
+                        var first = country_api.Country.NativeName.Languages.First();
+                        native_name = country_api.Country.NativeName.Languages[first.Key].Official;
+                    }
+                    else
+                    {
+                        native_name = "";
+                    }
+
+                    var country = new Country(name, alpha2Code, alpha3Code, String.Join(", ", capital), region, native_name);
 
                     lista.Add(country);
 	            }
@@ -70,15 +86,32 @@ namespace deathwing696
 
             return lista;
         }
-        static public Country Get_country(string name)
+        static public Country Get_country(string nombre)
         {
             Country country = null;
 
             try
             {
-                CountryAPI country_api = Get_country_api(name);
+                CountryAPI country_api = Get_country_api(nombre);
+                string name, alpha2Code, alpha3Code, capital, region, native_name;
 
-                new Country(country_api.Country.Name, country_api.Alpha2Code, country_api.Alpha3Code, String.Join(", ", country_api.Capital), country_api.Region, country_api.Country.NativeName.NativeNameName.NativeName);
+                name = country_api.Country.Name ?? "";
+                alpha2Code = country_api.Alpha2Code ?? "";
+                alpha3Code = country_api.Alpha3Code ?? "";
+                capital = country_api.Capital != null ? String.Join(", ", country_api.Capital) : "";
+                region = country_api.Region ?? "";
+
+                if (country_api.Country.NativeName != null)
+                {
+                    var first = country_api.Country.NativeName.Languages.First();
+                    native_name = country_api.Country.NativeName.Languages[first.Key].Official;
+                }
+                else
+                {
+                    native_name = "";
+                }
+
+                country = new Country(name, alpha2Code, alpha3Code, String.Join(", ", capital), region, native_name);
             }
             catch (Exception ex)
             {
@@ -113,16 +146,14 @@ namespace deathwing696
         {
             byte[] buffer = null;
             string apiUrl = $"{url}/name/{name_country}?fields=flags";
-
-            ServicePointManager.Expect100Continue = true;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            
             var request = (HttpWebRequest)WebRequest.Create(apiUrl);
             request.Method = "GET";
             request.ContentType = "application/json";
-            request.UserAgent = "deathwing696";
+            request.Accept = "application/json";
+            request.UserAgent = "Mozilla/5.0";
             request.Accept = "*/*";
-            request.Headers["Accept-Encoding"] = "gzip, deflate, br";
-            request.Connection = "keep-alive";
+            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(delegate { return true; });
 
             try
             {
@@ -134,12 +165,19 @@ namespace deathwing696
                         {
                             using (StreamReader objReader = new StreamReader(strReader))
                             {
-                                CountryAPI country;
+                                List<CountryAPI> countries;
                                 string body = objReader.ReadToEnd();
 
-                                country = JsonConvert.DeserializeObject<CountryAPI>(body);
+                                countries = JsonConvert.DeserializeObject<List<CountryAPI>>(body);
 
-                                buffer = Donwload_flag_and_encode(country.Flag.Flag);
+                                if (countries.Count > 0)
+                                {
+                                    buffer = Donwload_flag_and_encode(countries[0].Flag.Flag);
+                                }
+                                else
+                                {
+                                    buffer = new byte[0];
+                                }
                             }
                         }
                     }
@@ -155,15 +193,22 @@ namespace deathwing696
         private static byte[] Donwload_flag_and_encode(string url_bandera)
         {
             byte[] buffer = null;
-            string temp_path = @"c:\temp\flag.svg";
+            string temp_path = @"C:\Users\death\Descargas", nombre_archivo = "flag.svg";
 
             using (WebClient client = new WebClient())
             {
-                client.DownloadFile(new Uri(url), temp_path);
+                try
+                {
+                    client.DownloadFile(new Uri(url_bandera), nombre_archivo);
+                }
+                catch(WebException ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
 
-                buffer = System.IO.File.ReadAllBytes(temp_path);
+                buffer = System.IO.File.ReadAllBytes(nombre_archivo);
 
-                var file = new FileInfo(temp_path);
+                var file = new FileInfo(nombre_archivo);
 
                 file.Delete();
             }
@@ -174,10 +219,12 @@ namespace deathwing696
         {
             string apiUrl = $"{url}/name/{name}";
 
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls;
             var request = (HttpWebRequest)WebRequest.Create(apiUrl);
             request.Method = "GET";
             request.Accept = "application/json";
+            request.UserAgent = "Mozilla/5.0";
+            request.Accept = "*/*";
+            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(delegate { return true; });
 
             try
             {
@@ -190,8 +237,14 @@ namespace deathwing696
                             using (StreamReader objReader = new StreamReader(strReader))
                             {
                                 string body = objReader.ReadToEnd();
+                                List<CountryAPI> countries;
 
-                                return JsonConvert.DeserializeObject<CountryAPI>(body);
+                                countries = JsonConvert.DeserializeObject < List<CountryAPI>>(body);
+
+                                if (countries.Count > 0)
+                                    return countries[0];
+                                else
+                                    return new CountryAPI();
                             }
                         }
                         else
@@ -254,7 +307,6 @@ namespace deathwing696
     {
         [JsonProperty("name")]
         public CountryAPICountry Country {get; set;}
-//        public string Name { get; set; }
 
         [JsonProperty("cca2")]
         public string Alpha2Code { get; set; }
@@ -278,76 +330,46 @@ namespace deathwing696
         public string Name { get; set; }
 
         [JsonProperty("nativeName")]
-        public CountryAPINativaName NativeName { get; set; }
+        [JsonConverter(typeof(NativeNameConverter))]
+        public NativeName NativeName { get; set; }
     }
 
-    public class CountryAPINativaName
+    public class LanguageData
     {
-        [JsonProperty("fra")]
-        public CountryAPINativeNameName NativeNameName { get; set; }
-
-        [JsonProperty("spa")]
-        public CountryAPINativeNameName NativeNameName2 { set { NativeNameName = value; } }
-
-        [JsonProperty("eng")]
-        public CountryAPINativeNameName NativeNameName3 { set { NativeNameName = value; } }
-
-        [JsonProperty("por")]
-        public CountryAPINativeNameName NativeNameName4 { set { NativeNameName = value; } }
-
-        [JsonProperty("swa")]
-        public CountryAPINativeNameName NativeNameName5 { set { NativeNameName = value; } }
-
-        [JsonProperty("div")]
-        public CountryAPINativeNameName NativeNameName6 { set { NativeNameName = value; } }
-
-        [JsonProperty("ber")]
-        public CountryAPINativeNameName NativeNameName7 { set { NativeNameName = value; } }
-
-        [JsonProperty("tur")]
-        public CountryAPINativeNameName NativeNameName8 { set { NativeNameName = value; } }
-
-        [JsonProperty("swe")]
-        public CountryAPINativeNameName NativeNameName9 { set { NativeNameName = value; } }
-
-        [JsonProperty("fas")]
-        public CountryAPINativeNameName NativeNameName10 { set { NativeNameName = value; } }
-
-        [JsonProperty("ind")]
-        public CountryAPINativeNameName NativeNameName11 { set { NativeNameName = value; } }
-
-        [JsonProperty("prs")]
-        public CountryAPINativeNameName NativeNameName12 { set { NativeNameName = value; } }
-
-        [JsonProperty("sqi")]
-        public CountryAPINativeNameName NativeNameName13 { set { NativeNameName = value; } }
-
-        [JsonProperty("ara")]
-        public CountryAPINativeNameName NativeNameName14 { set { NativeNameName = value; } }
-
-        [JsonProperty("khm")]
-        public CountryAPINativeNameName NativeNameName15 { set { NativeNameName = value; } }
-
-        [JsonProperty("nep")]
-        public CountryAPINativeNameName NativeNameName16 { set { NativeNameName = value; } }
-
-        [JsonProperty("tha")]
-        public CountryAPINativeNameName NativeNameName17 { set { NativeNameName = value; } }
-
-        [JsonProperty("cnr")]
-        public CountryAPINativeNameName NativeNameName18 { set { NativeNameName = value; } }
-
-        [JsonProperty("rus")]
-        public CountryAPINativeNameName NativeNameName19 { set { NativeNameName = value; } }
-
-        [JsonProperty("bul")]
-        public CountryAPINativeNameName NativeNameName20 { set { NativeNameName = value; } }
+        public string Official { get; set; }
+        public string Common { get; set; }
     }
 
-    public class CountryAPINativeNameName
+    public class NativeName
     {
-        [JsonProperty("official")]
-        public string NativeName { get; set; }
+        public Dictionary<string, LanguageData> Languages { get; set; } = new Dictionary<string, LanguageData>();
+    }
+
+    public class NativeNameConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(NativeName);
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var jsonObject = JObject.Load(reader);
+            var nativeName = new NativeName();
+
+            foreach (var property in jsonObject.Properties())
+            {
+                var languageData = property.Value.ToObject<LanguageData>();
+                nativeName.Languages[property.Name] = languageData;
+            }
+
+            return nativeName;
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
     }
     public class CoutryAPIFlag
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using deathwing696;
+using ninja_challenge.tests;
 
 namespace ninja_challenge.src
 {
@@ -10,10 +10,17 @@ namespace ninja_challenge.src
     {
         static void Main(string[] args)
         {
-            List<Country> lista = Country.Get_all_countries();
+            Test_all_countries all_countries = new Test_all_countries();
 
-            foreach (var country in lista)
-                country.Dibuja_consola();
+            all_countries.Test();
+
+            Test_country country = new Test_country();
+
+            country.Test();
+
+            Test_flag flag = new Test_flag();
+
+            flag.Test();
 
             Console.Read();
         }
