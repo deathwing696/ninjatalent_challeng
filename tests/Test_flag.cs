@@ -1,10 +1,21 @@
 ﻿using System;
-using deathwing696;
 
-namespace ninja_challenge.tests
+namespace deathwing696
 {
     public class Test_flag
     {
+        #region Variables
+        private Bd context;
+        #endregion
+
+        #region Constructores
+        public Test_flag(Bd context)
+        {
+            this.context = context;
+        }
+        #endregion
+
+        #region Métodos
         public void Test()
         {
             Console.WriteLine("Prueba de recuperación de una bandera");
@@ -20,5 +31,6 @@ namespace ninja_challenge.tests
 
             Console.WriteLine("-------------------------------------");
         }
+        #endregion
     }
 }

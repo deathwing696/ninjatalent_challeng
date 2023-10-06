@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Net.Security;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using System.ComponentModel.DataAnnotations;
 
 namespace deathwing696
 {
@@ -19,10 +20,11 @@ namespace deathwing696
         private string region;
         private string nativeName;
 
-        static private string url = "http://restcountries.com/v3.1";
+        private static readonly string url = "http://restcountries.com/v3.1";
 
-        public string Name { get => name; set => name = value; }
+        [Key]
         public string Alpha2Code { get => alpha2Code; set => alpha2Code = value; }
+        public string Name { get => name; set => name = value; }        
         public string Alpha3Code { get => alpha3Code; set => alpha3Code = value; }
         public string Capital { get => capital; set => capital = value; }
         public string Region { get => region; set => region = value; }
@@ -137,16 +139,12 @@ namespace deathwing696
 
             return bandera;
         }
-        public void Dibuja_consola()
-        {
-            Console.WriteLine($"País:{this.Name} | {this.Alpha2Code} | {this.Alpha3Code} | {this.Capital} | {this.Region} | {this.NativeName} ");
-        }
 
         private static byte[] Get_flag_api(string name_country)
         {
             byte[] buffer = null;
             string apiUrl = $"{url}/name/{name_country}?fields=flags";
-            
+
             var request = (HttpWebRequest)WebRequest.Create(apiUrl);
             request.Method = "GET";
             request.ContentType = "application/json";
@@ -193,7 +191,7 @@ namespace deathwing696
         private static byte[] Donwload_flag_and_encode(string url_bandera)
         {
             byte[] buffer = null;
-            string temp_path = @"C:\Users\death\Descargas", nombre_archivo = "flag.svg";
+            string nombre_archivo = "flag.svg";
 
             using (WebClient client = new WebClient())
             {
@@ -201,7 +199,7 @@ namespace deathwing696
                 {
                     client.DownloadFile(new Uri(url_bandera), nombre_archivo);
                 }
-                catch(WebException ex)
+                catch (WebException ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
@@ -239,7 +237,7 @@ namespace deathwing696
                                 string body = objReader.ReadToEnd();
                                 List<CountryAPI> countries;
 
-                                countries = JsonConvert.DeserializeObject < List<CountryAPI>>(body);
+                                countries = JsonConvert.DeserializeObject<List<CountryAPI>>(body);
 
                                 if (countries.Count > 0)
                                     return countries[0];
@@ -269,7 +267,7 @@ namespace deathwing696
             request.ContentType = "application/json";
             request.UserAgent = "Mozilla/5.0";
             request.Accept = "*/*";
-            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback (delegate { return true; });
+            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(delegate { return true; });
 
             try
             {
@@ -299,6 +297,94 @@ namespace deathwing696
                 return new List<CountryAPI>();
             }
         }
+
+        public void Dibuja_consola()
+        {
+            Console.WriteLine($"País:{this.Name} | {this.Alpha2Code} | {this.Alpha3Code} | {this.Capital} | {this.Region} | {this.NativeName} ");
+        }
+
+        public bool Insert(Bd context)
+        {
+            bool ok = true;
+
+            try
+            {
+                if (!context.Countries.Any(c => c.Alpha2Code == Alpha2Code))
+                {
+                    context.Countries.Add(this);
+                    context.SaveChanges();
+                }
+            }
+            catch(Exception ex)
+            {
+                ok = false;
+            }
+
+            return ok;
+        }
+        static public Country Read(Bd context, string alpha2Code)
+        {
+            Country country = null;
+
+            try
+            {
+                country = context.Countries.Find(alpha2Code);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            return country;
+        }
+        public bool Update(Bd context, Country country)
+        {
+            bool ok = true;
+
+            try
+            {
+                if (context.Countries.Any(c=> c.alpha2Code == Alpha2Code))
+                {
+                    name = country.Name;
+                    alpha3Code = country.Alpha3Code;
+                    capital = country.Capital;
+                    region = country.Region;
+                    nativeName = country.NativeName;
+
+                    context.SaveChanges();
+                }
+            }
+            catch(Exception ex)
+            {
+                ok = false;
+            }
+
+            return ok;
+        }
+        static public bool Delete(Bd context, string alpha2Code)
+        {
+            bool ok = true;
+
+            try
+            {
+                if (context.Countries.Any(c=> c.Alpha2Code == alpha2Code))
+                {
+                    Country country;
+
+                    country = Read(context, alpha2Code);
+
+                    context.Countries.Remove(country);
+
+                    context.SaveChanges();
+                }
+            }
+            catch(Exception ex)
+            {
+                ok = false;
+            }
+
+            return ok;
+        }        
 
         #endregion
     } 
