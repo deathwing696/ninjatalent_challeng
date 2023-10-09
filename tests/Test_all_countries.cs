@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity.Validation;
 using deathwing696;
-using System.Linq;
 
 namespace ninja_challenge.tests
 {
