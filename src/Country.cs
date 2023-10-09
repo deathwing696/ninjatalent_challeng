@@ -43,6 +43,16 @@ namespace deathwing696
             this.nativeName = nativeName;
         }
 
+        public Country()
+        {
+            this.name = "";
+            this.alpha2Code = "";
+            this.alpha3Code = "";
+            this.capital = "";
+            this.region = "";
+            this.nativeName = "";
+        }
+
         #endregion
 
         #region Métodos públicos
@@ -328,7 +338,8 @@ namespace deathwing696
 
             try
             {
-                country = context.Countries.Find(alpha2Code);
+                if (context.Countries.Any(c => c.Alpha2Code == alpha2Code))
+                    country = context.Countries.Find(alpha2Code);
             }
             catch(Exception ex)
             {
@@ -337,21 +348,28 @@ namespace deathwing696
 
             return country;
         }
-        public bool Update(Bd context, Country country)
+        public bool Update(Bd context)
         {
             bool ok = true;
 
             try
             {
-                if (context.Countries.Any(c=> c.alpha2Code == Alpha2Code))
+                if (context.Countries.Any(c=> c.Alpha2Code == Alpha2Code))
                 {
-                    name = country.Name;
-                    alpha3Code = country.Alpha3Code;
-                    capital = country.Capital;
-                    region = country.Region;
-                    nativeName = country.NativeName;
+                    Country country;
 
-                    context.SaveChanges();
+                    country = Read(context, this.Alpha2Code);
+
+                    if (country != null)
+                    {
+                        country.Name = this.Name;
+                        country.alpha3Code = this.Alpha3Code;
+                        country.capital = this.Capital;
+                        country.region = this.Region;
+                        country.nativeName = this.NativeName;
+
+                        context.SaveChanges();
+                    }
                 }
             }
             catch(Exception ex)
