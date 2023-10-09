@@ -38,13 +38,10 @@ namespace deathwing696
 
             Console.WriteLine("-------------------------------------");
         }
-
         public void Test_update(Country country)
         {
             Console.WriteLine("Prueba de actualización de datos de un país de la base de datos");
             Console.WriteLine("-------------------------------------");
-
-            country.Update(context);
 
             if (!country.Update(context))
             {
@@ -58,7 +55,6 @@ namespace deathwing696
 
             Console.WriteLine("-------------------------------------");
         }
-
         public void Test_delete(string alpha2Code)
         {
             Console.WriteLine("Prueba de borrado de un país de la base de datos");

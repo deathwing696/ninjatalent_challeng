@@ -43,6 +43,16 @@ namespace deathwing696
             this.nativeName = nativeName;
         }
 
+        public Country()
+        {
+            this.name = "";
+            this.alpha2Code = "";
+            this.alpha3Code = "";
+            this.capital = "";
+            this.region = "";
+            this.nativeName = "";
+        }
+
         #endregion
 
         #region Métodos públicos
@@ -328,7 +338,8 @@ namespace deathwing696
 
             try
             {
-                country = context.Countries.Find(alpha2Code);
+                if (context.Countries.Any(c => c.Alpha2Code == alpha2Code))
+                    country = context.Countries.Find(alpha2Code);
             }
             catch(Exception ex)
             {
@@ -343,7 +354,7 @@ namespace deathwing696
 
             try
             {
-                if (context.Countries.Any(c=> c.alpha2Code == Alpha2Code))
+                if (context.Countries.Any(c=> c.Alpha2Code == Alpha2Code))
                 {
                     Country country;
 

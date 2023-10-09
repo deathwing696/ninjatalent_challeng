@@ -16,13 +16,27 @@ namespace deathwing696
 
                 all_countries.Test();
 
-                Test_country country = new Test_country(context);
+                Test_country test_country = new Test_country(context);
 
-                country.Test();
+                test_country.Test();
 
                 Test_flag flag = new Test_flag(context);
 
                 flag.Test();
+
+                var test_bd = new Test_bd(context);
+
+                test_bd.Test_read("DE");
+
+                Country country = Country.Read(context, "DE");
+
+                if (country != null)
+                {
+                    country.Name = "Alemaña";
+                    test_bd.Test_update(country);
+                }
+
+                test_bd.Test_delete("DE");
 
                 Console.ReadKey();
             }
